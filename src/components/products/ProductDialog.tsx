@@ -52,7 +52,7 @@ export default function ProductDialog({ children, product }: ProductDialogProps)
     useEffect(() => {
         if (open) {
             getCategories().then((result) => {
-                if (result.success) {
+                if (result.success && result.data) {
                     setCategories(result.data);
                 }
             });

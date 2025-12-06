@@ -1,11 +1,29 @@
+'use client';
+
 import { authenticate } from '@/lib/actions/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PackageIcon } from 'lucide-react';
+import { useState } from 'react';
 
 export default function LoginPage() {
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    async function handleSubmit(formData: FormData) {
+        setIsLoading(true);
+        setError(null);
+
+        const result = await authenticate(formData);
+
+        if (result && !result.success) {
+            setError(result.error || 'Invalid credentials');
+            setIsLoading(false);
+        }
+    }
+
     return (
         <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
             <Card className="w-full max-w-md border-slate-700 bg-slate-900/50 backdrop-blur-lg">
@@ -21,7 +39,12 @@ export default function LoginPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form action={authenticate} className="space-y-4">
+                    <form action={handleSubmit} className="space-y-4">
+                        {error && (
+                            <div className="rounded-lg bg-red-500/10 border border-red-500/50 p-3 text-sm text-red-400">
+                                {error}
+                            </div>
+                        )}
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-slate-300">Email</Label>
                             <Input
@@ -46,9 +69,10 @@ export default function LoginPage() {
                         </div>
                         <Button
                             type="submit"
-                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 font-semibold hover:from-purple-700 hover:to-pink-700"
+                            disabled={isLoading}
+                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 font-semibold hover:from-purple-700 hover:to-pink-700 disabled:opacity-50"
                         >
-                            Sign In
+                            {isLoading ? 'Signing in...' : 'Sign In'}
                         </Button>
                         <p className="text-center text-sm text-slate-400">
                             Demo: admin@example.com / password123

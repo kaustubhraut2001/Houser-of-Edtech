@@ -7,11 +7,19 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 
 export default async function DashboardPage() {
-    const statsResult = await getProductStats();
-    const lowStockResult = await getLowStockProducts(10);
+    let stats = null;
+    let lowStockProducts: any[] = [];
 
-    const stats = statsResult.success ? statsResult.data : null;
-    const lowStockProducts = lowStockResult.success ? lowStockResult.data : [];
+    try {
+        const statsResult = await getProductStats();
+        const lowStockResult = await getLowStockProducts(10);
+
+        stats = statsResult.success ? statsResult.data : null;
+        lowStockProducts = lowStockResult.success ? (lowStockResult.data ?? []) : [];
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        // Continue with default values if there's an error
+    }
 
     return (
         <div className="space-y-6">

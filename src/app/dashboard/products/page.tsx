@@ -6,7 +6,7 @@ import ProductDialog from '@/components/products/ProductDialog';
 
 export default async function ProductsPage() {
     const result = await getProducts();
-    const products = result.success ? result.data : [];
+    const products = result.success ? (result.data ?? []) : [];
 
     return (
         <div className="space-y-6">

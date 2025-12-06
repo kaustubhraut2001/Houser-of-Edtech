@@ -1,0 +1,2 @@
+﻿src/lib/prisma.ts(3,22): error TS7016: Could not find a declaration file for module 'pg'. 'D:/Company Assignment/House of Edtech/inventory-app/node_modules/pg/esm/index.mjs' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/pg` if it exists or add a new declaration (.d.ts) file containing `declare module 'pg';`

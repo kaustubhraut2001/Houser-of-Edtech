@@ -5,23 +5,21 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import * as bcrypt from 'bcryptjs';
 
-export async function authenticate(formData: FormData) {
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-
+export async function authenticate(formData: FormData): Promise<{ success: false; error: string } | void> {
     try {
+        const email = formData.get('email') as string;
+        const password = formData.get('password') as string;
+
+        if (!email || !password) {
+            return { success: false, error: 'Email and password are required' };
+        }
+
         const user = await prisma.user.findUnique({
             where: { email },
         });
 
-        if (!user) {
-            return { success: false, error: 'Invalid credentials.' };
-        }
-
-        const isValidPassword = await bcrypt.compare(password, user.password);
-
-        if (!isValidPassword) {
-            return { success: false, error: 'Invalid credentials.' };
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            return { success: false, error: 'Invalid credentials' };
         }
 
         // Set session cookie
@@ -35,8 +33,12 @@ export async function authenticate(formData: FormData) {
 
         redirect('/dashboard');
     } catch (error) {
-        console.error('Auth error:', error);
-        return { success: false, error: 'Something went wrong.' };
+        // If it's a redirect error, re-throw it
+        if (error && typeof error === 'object' && 'digest' in error) {
+            throw error;
+        }
+        console.error('Authentication error:', error);
+        return { success: false, error: 'An error occurred during authentication' };
     }
 }
 
