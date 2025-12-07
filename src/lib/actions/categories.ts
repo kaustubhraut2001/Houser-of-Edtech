@@ -3,6 +3,15 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
+// Helper function to create slug from name
+const slugify = (text: string) =>
+    text.toString().toLowerCase()
+        .replace(/\s+/g, '-')           // Replace spaces with -
+        .replace(/[^\w-]+/g, '')       // Remove all non-word chars
+        .replace(/--+/g, '-')           // Replace multiple - with single -
+        .replace(/^-+/, '')             // Trim - from start of text
+        .replace(/-+$/, '');            // Trim - from end of text
+
 export interface CategoryFormData {
     name: string;
 }
@@ -46,6 +55,7 @@ export async function createCategory(data: CategoryFormData) {
         const category = await prisma.category.create({
             data: {
                 name: data.name,
+                slug: slugify(data.name),
             },
         });
         revalidatePath('/dashboard/products');
@@ -58,12 +68,25 @@ export async function createCategory(data: CategoryFormData) {
 
 export async function updateCategory(id: string, data: CategoryFormData) {
     try {
+        // Get current category to check if name changed
+        const currentCategory = await prisma.category.findUnique({
+            where: { id },
+        });
+
+        const updateData: any = {
+            name: data.name,
+        };
+
+        // Only update slug if name has changed
+        if (currentCategory && currentCategory.name !== data.name) {
+            updateData.slug = slugify(data.name);
+        }
+
         const category = await prisma.category.update({
             where: { id },
-            data: {
-                name: data.name,
-            },
+            data: updateData,
         });
+
         revalidatePath('/dashboard/products');
         return { success: true, data: category };
     } catch (error) {

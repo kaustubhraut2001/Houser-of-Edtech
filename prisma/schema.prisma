@@ -7,6 +7,7 @@ generator client {
 
 datasource db {
   provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -14,8 +15,11 @@ model User {
   email     String   @unique
   name      String?
   password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("createdAt")
+  updatedAt DateTime @updatedAt @map("updatedAt")
+  role      String   @default("USER") // Add role field with default value
+
+  @@map("users")
 }
 
 model Product {
@@ -25,15 +29,27 @@ model Product {
   price       Float
   stock       Int       @default(0)
   categoryId  String?   @db.ObjectId
-  category    Category? @relation(fields: [categoryId], references: [id])
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now()) @map("createdAt")
+  updatedAt   DateTime  @updatedAt @map("updatedAt")
+  isActive    Boolean   @default(true)
+
+  // Indexes
+  @@index([name], name: "product_name_idx")
+  @@index([categoryId], name: "product_category_idx")
+  @@map("products")
 }
 
 model Category {
   id        String    @id @default(auto()) @map("_id") @db.ObjectId
   name      String    @unique
+  slug      String    @unique
   products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime  @default(now()) @map("createdAt")
+  updatedAt DateTime  @updatedAt @map("updatedAt")
+  isActive  Boolean   @default(true)
+
+  @@map("categories")
 }
+
+// Indexes are defined within their respective models

@@ -19,23 +19,41 @@ async function main() {
 
   console.log('Created user:', user.email);
 
+  // Helper function to create slug from name
+  const slugify = (text: string) => 
+    text.toString().toLowerCase()
+      .replace(/\s+/g, '-')           // Replace spaces with -
+      .replace(/[^\w-]+/g, '')       // Remove all non-word chars
+      .replace(/--+/g, '-')           // Replace multiple - with single -
+      .replace(/^-+/, '')             // Trim - from start of text
+      .replace(/-+$/, '');            // Trim - from end of text
+
   // Create categories
   const electronics = await prisma.category.upsert({
     where: { name: 'Electronics' },
     update: {},
-    create: { name: 'Electronics' },
+    create: { 
+      name: 'Electronics',
+      slug: 'electronics'
+    },
   });
 
   const furniture = await prisma.category.upsert({
     where: { name: 'Furniture' },
     update: {},
-    create: { name: 'Furniture' },
+    create: { 
+      name: 'Furniture',
+      slug: 'furniture'
+    },
   });
 
   const clothing = await prisma.category.upsert({
     where: { name: 'Clothing' },
     update: {},
-    create: { name: 'Clothing' },
+    create: { 
+      name: 'Clothing',
+      slug: 'clothing'
+    },
   });
 
   console.log('Created categories');

@@ -1,12 +1,15 @@
-﻿version: '3.8'
-
+﻿
 services:
-  db:
+  mongodb:
     image: mongo:7.0
     container_name: inventory-mongodb
-    restart: unless-stopped
+    restart: always
     ports:
       - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: kaustubhraut07
+      MONGO_INITDB_ROOT_PASSWORD: kaustubhraut07
+      MONGO_INITDB_DATABASE: inventory_db
     volumes:
       - mongodb_data:/data/db
     healthcheck:
@@ -16,37 +19,19 @@ services:
       retries: 5
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: inventory-app
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=mongodb://db:27017/inventory_db
+      - DATABASE_URL=mongodb://kaustubhraut07:kaustubhraut07@mongodb:27017/inventory_db?authSource=admin
       - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=your-secret-key-here-change-this-in-production
     depends_on:
-      db:
+      mongodb:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
-    command: node server.js
-
-  migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: builder
-    container_name: inventory-migrate
-    environment:
-      - DATABASE_URL=mongodb://db:27017/inventory_db
-    depends_on:
-      db:
-        condition: service_healthy
-    command: npx prisma db push
 
 volumes:
   mongodb_data:
