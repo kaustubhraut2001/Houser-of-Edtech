@@ -10,8 +10,8 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // Redirect to dashboard if accessing login with active session
-    if (session && pathname === '/login') {
+    // Redirect to dashboard if accessing login or register with active session
+    if (session && (pathname === '/login' || pathname === '/register')) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
