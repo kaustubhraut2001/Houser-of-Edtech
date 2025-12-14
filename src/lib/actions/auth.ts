@@ -131,3 +131,113 @@ export async function getSession() {
         return null;
     }
 }
+
+export async function getCurrentUser() {
+    const session = await getSession();
+    if (!session?.userId) return null;
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: session.userId },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                role: true,
+                createdAt: true,
+                updatedAt: true,
+            },
+        });
+        return user;
+    } catch (error) {
+        console.error('Error fetching current user:', error);
+        return null;
+    }
+}
+
+export async function updateProfile(formData: FormData) {
+    const session = await getSession();
+    if (!session?.userId) return { success: false, error: 'Not authenticated' };
+
+    const name = formData.get('name') as string;
+    const email = formData.get('email') as string;
+
+    if (!email) {
+        return { success: false, error: 'Email is required' };
+    }
+
+    try {
+        // Check if email is taken by another user
+        const existingUser = await prisma.user.findUnique({
+            where: { email },
+        });
+
+        if (existingUser && existingUser.id !== session.userId) {
+            return { success: false, error: 'Email is already in use' };
+        }
+
+        const updatedUser = await prisma.user.update({
+            where: { id: session.userId },
+            data: { name, email },
+        });
+
+        // Update session if email changed
+        if (email !== session.email) {
+            const cookieStore = await cookies();
+            cookieStore.set('session', JSON.stringify({ userId: updatedUser.id, email: updatedUser.email }), {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 60 * 60 * 24 * 7,
+            });
+        }
+
+        return { success: true, message: 'Profile updated successfully' };
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        return { success: false, error: 'Failed to update profile' };
+    }
+}
+
+export async function changePassword(formData: FormData) {
+    const session = await getSession();
+    if (!session?.userId) return { success: false, error: 'Not authenticated' };
+
+    const currentPassword = formData.get('currentPassword') as string;
+    const newPassword = formData.get('newPassword') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        return { success: false, error: 'All fields are required' };
+    }
+
+    if (newPassword.length < 8) {
+        return { success: false, error: 'New password must be at least 8 characters' };
+    }
+
+    if (newPassword !== confirmPassword) {
+        return { success: false, error: 'New passwords do not match' };
+    }
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: session.userId },
+        });
+
+        if (!user || !(await bcrypt.compare(currentPassword, user.password))) {
+            return { success: false, error: 'Incorrect current password' };
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await prisma.user.update({
+            where: { id: session.userId },
+            data: { password: hashedPassword },
+        });
+
+        return { success: true, message: 'Password changed successfully' };
+    } catch (error) {
+        console.error('Error changing password:', error);
+        return { success: false, error: 'Failed to change password' };
+    }
+}
